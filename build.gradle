@@ -96,3 +96,8 @@ pluginBundle {
         artifactId = project.name
     }
 }
+project.afterEvaluate {
+  verifyGoogleJavaFormat {
+    ignoreFailures true
+  }
+}

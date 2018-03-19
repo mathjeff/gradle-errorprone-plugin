@@ -53,6 +53,14 @@ public class ErrorProneCompiler implements Compiler<JavaCompileSpec> {
 
     ClassLoader tccl = Thread.currentThread().getContextClassLoader();
     int exitCode;
+
+    if (tccl instanceof SelfFirstClassLoader) {
+      throw UncheckedException.throwAsUncheckedException(
+              new IllegalStateException("Thread.currentThread().getContextClassLoader() is " +
+                      tccl + ", which is of type SelfFirstClassLoader. Was it not cleared " +
+                      "correctly previously?"));
+    }
+
     try (URLClassLoader cl = new SelfFirstClassLoader(urls.toArray(new URL[urls.size()]))) {
       Thread.currentThread().setContextClassLoader(cl);
 
@@ -65,6 +73,9 @@ public class ErrorProneCompiler implements Compiler<JavaCompileSpec> {
               .getMethod("compile", String[].class)
               .invoke(compiler, (Object) args.toArray(new String[args.size()]));
       exitCode = result.getClass().getField("exitCode").getInt(result);
+    } catch (ClassNotFoundException cnfe) {
+      System.out.println("ErrorProneCompiler failed to find class: " + cnfe + ". Classloader urls: " + urls);
+      throw UncheckedException.throwAsUncheckedException(cnfe);
     } catch (Exception e) {
       throw UncheckedException.throwAsUncheckedException(e);
     } finally {
